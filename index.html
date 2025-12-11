@@ -1,202 +1,436 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>中国通史闪卡复习神器</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-  body { font-family: "Noto Sans SC", "Microsoft YaHei", sans-serif; background: #f0f2f5; margin:0; padding:20px; transition: all 0.3s; }
-  body.dark { background:#121212; color:#eee; }
-  h1 { text-align:center; color:#1a73e8; }
-  body.dark h1 { color:#8ab4f8; }
-  .controls { text-align:center; margin:20px; }
-  button { padding:10px 20px; margin:5px; background:#1a73e8; color:white; border:none; border-radius:6px; cursor:pointer; }
-  button:hover { background:#1557b0; }
-  .stats { text-align:center; font-size:1.1em; margin:15px; }
-  .card-container { perspective: 1000px; max-width:680px; margin:0 auto; }
-  .card { width:100%; height:400px; position:relative; transform-style:preserve-3d; transition:transform 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55); cursor:pointer; box-shadow:0 10px 20px rgba(0,0,0,0.1); border-radius:12px; }
-  .card.flipped { transform:rotateY(180deg); }
-  .side { position:absolute; width:100%; height:100%; backface-visibility:hidden; display:flex; align-items:center; justify-content:center; padding:30px; box-sizing:border-box; border-radius:12px; text-align:center; font-size:1.4em; }
-  .front { background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:white; }
-  .back  { background:linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color:white; transform:rotateY(180deg); }
-  body.dark .front { background:#1e3a8a; }
-  body.dark .back  { background:#4c1d95; }
-  .footer { text-align:center; margin-top:40px; color:#666; font-size:0.9em; }
-  input[type=text] { padding:10px; width:300px; border-radius:6px; border:1px solid #ccc; }
-  .known-btn { background:#34a853; }
-  .learning-btn { background:#f9a825; }
-</style>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Probability Distribution Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .slider-container { margin-bottom: 1rem; }
+        /* Custom scrollbar for sidebar */
+        aside::-webkit-scrollbar { width: 6px; }
+        aside::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
+    </style>
 </head>
-<body>
-  <h1>中国通史 · 闪卡复习</h1>
-  <div class="controls">
-    <input type="text" id="search" placeholder="搜索题目关键词..." onkeyup="filterCards()">
-    <button onclick="prevCard()">上一张</button>
-    <button onclick="toggleFlip()">显示答案 / 翻卡</button>
-    <button onclick="nextCard()">下一张</button>
-    <button onclick="shuffleCards()">随机顺序</button>
-    <button onclick="toggleDark()">夜间模式</button>
-  </div>
-  <div class="stats">第 <span id="current">1</span> / <span id="total">0</span> 张　　已掌握 <span id="known">0</span>　　还需复习 <span id="learning">0</span></div>
+<body class="bg-slate-50 h-screen flex flex-col md:flex-row overflow-hidden">
 
-  <div class="card-container">
-    <div class="card" id="card" onclick="toggleFlip()">
-      <div class="side front" id="question"></div>
-      <div class="side back" id="answer"></div>
-    </div>
-  </div>
+    <aside class="w-full md:w-64 bg-white border-r border-slate-200 flex flex-col h-1/3 md:h-full overflow-y-auto shrink-0 z-10 shadow-md">
+        <div class="p-6 bg-indigo-600 text-white">
+            <h1 class="font-bold text-xl">Prob. Explorer</h1>
+            <p class="text-xs text-indigo-200 mt-1">Select a distribution</p>
+        </div>
+        
+        <div class="p-4">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Discrete</h3>
+            <ul class="space-y-1">
+                <li><button onclick="loadDist('bernoulli')" class="w-full text-left px-4 py-2 rounded hover:bg-slate-100 text-slate-700 text-sm font-medium transition" id="btn-bernoulli">Bernoulli</button></li>
+                <li><button onclick="loadDist('binomial')" class="w-full text-left px-4 py-2 rounded hover:bg-slate-100 text-slate-700 text-sm font-medium transition" id="btn-binomial">Binomial</button></li>
+                <li><button onclick="loadDist('geometric')" class="w-full text-left px-4 py-2 rounded hover:bg-slate-100 text-slate-700 text-sm font-medium transition" id="btn-geometric">Geometric</button></li>
+                <li><button onclick="loadDist('poisson')" class="w-full text-left px-4 py-2 rounded hover:bg-slate-100 text-slate-700 text-sm font-medium transition" id="btn-poisson">Poisson</button></li>
+            </ul>
 
-  <div class="controls" style="margin-top:20px;">
-    <button class="known-btn" onclick="markKnown()">✓ 我已掌握</button>
-    <button class="learning-btn" onclick="markLearning()">○ 还需复习</button>
-  </div>
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 mt-6">Continuous</h3>
+            <ul class="space-y-1">
+                <li><button onclick="loadDist('uniform')" class="w-full text-left px-4 py-2 rounded hover:bg-slate-100 text-slate-700 text-sm font-medium transition" id="btn-uniform">Uniform</button></li>
+                <li><button onclick="loadDist('normal')" class="w-full text-left px-4 py-2 rounded hover:bg-slate-100 text-slate-700 text-sm font-medium transition" id="btn-normal">Normal (Gaussian)</button></li>
+                <li><button onclick="loadDist('exponential')" class="w-full text-left px-4 py-2 rounded hover:bg-slate-100 text-slate-700 text-sm font-medium transition" id="btn-exponential">Exponential</button></li>
+            </ul>
+        </div>
+    </aside>
 
-<script>
-// ====================== 数据 ======================
-const flashcards = [
-  {q:"孔子教书的时期，周朝中央权威衰落导致了什么后果？", a:"地方诸侯国矛盾激化，进入春秋时期。"},
-  {q:"孔子的思想和其弟子的对话被保存在哪本书中？", a:"《论语》"},
-  {q:"儒家思想中帮助我们理解孔子教义的总括概念是什么？", a:"道"},
-  {q:"孔子名言「朝闻道，夕死可矣」中的「闻」包含哪些丰富的意义？", a:"它涉及倾听、提问、理解和实践美德。"},
-  {q:"根据孔子弟子的说法，「君子务本，本立而道生」，这句话说明了「道」的什么特性？", a:"道不是静止的，必须培养根基才能使其生长。"},
-  {q:"在《论语》中，「君子」一词的意义发生了什么转变？", a:"从传统上指贵族/领主的儿子，转变为具有更广泛伦理意义、可以通过努力实现的理想人格。"},
-  {q:"根据孔子的教诲，成为「君子」的理想人格需要致力于什么？", a:"敬业学习"},
-  {q:"孔子之前的六艺（Six Arts）教育强调了哪六个领域？", a:"礼、乐、射、御、书、数"},
-  {q:"根据《论语》，要成为君子，除了「博学于文」，还需要用什么来约束自己？", a:"约之以礼"},
-  {q:"《论语》提到：「质胜文则野，文胜质则史。文质彬彬，然后君子。」这句话强调了什么平衡的重要性？", a:"文化修养（文）与物质根本（质）之间的平衡。"},
-  {q:"孔子说：「古之学者为己，今之学者为人。」这句话批评了当时学者学习的什么动机？", a:"为了给别人看或博取名声，而非为了自我道德修养。"},
-  {q:"儒家视野中两个最主要的基本概念是什么？", a:"仁和礼"},
-  {q:"在儒家思想中，「礼」最初指的是什么？", a:"宗教仪式"},
-  {q:"儒家的「礼」超越了其原有的宗教意义，也指在日常社会交往中的什么？", a:"适当行为"},
-  {q:"「礼」如何实现和平互利的社会存在？", a:"通过调节功能（规范行为）和构成功能（塑造品格）"},
-  {q:"孔子认为，与仅仅依靠法律和刑罚相比，治理人民更有效的途径是什么？", a:"以德引导之，以礼之治之"},
-  {q:"根据《论语》的观点，如果尊敬、谨慎、勇敢和直率没有「礼」的约束，会分别导致什么负面结果？", a:"劳碌、胆怯、混乱和尖刻无礼"},
-  {q:"儒家思想中，构成我们真正为人的基本道德品质和善良是什么？", a:"仁"},
-  {q:"「仁」最核心的定义是什么？", a:"爱人／关心他人"},
-  {q:"哪句《论语》名言体现了「仁」的恕道精神？", a:"己所不欲，勿施于人"},
-  {q:"孔子如何描述「仁」与「礼」之间的关系？", a:"克己复礼为仁，两者相辅相成，缺一不可"},
-  {q:"根据《论语》，培养「仁」的根本是什么？", a:"孝悌（孝顺父母、尊敬兄长）"},
-  {q:"道家的创始人是谁？", a:"老子"},
-  {q:"保存老子教义的书籍通常被称为什么？", a:"《道德经》"},
-  {q:"老子第十八章「大道废，有仁义」暗示了儒家的仁义是什么样的行为？", a:"非自然的、刻意的补救行为，是在自然秩序被破坏后才出现的"},
-  {q:"道家思想中的「道」与儒家思想中的「道」有何根本区别？", a:"道家认为「道」是超越人为伦理的自然原始秩序，而儒家认为「道」是需要人来弘扬和发展的道德准则"},
-  {q:"老子所说的「常道」有什么特点？", a:"无法用文字和语言完全捕捉，是宇宙万物诞生的源泉"},
-  {q:"在道家思想中，「无」或「空」为何是理解「道」的重要概念？", a:"因为「道」没有具体的物质形态、特征或形式，所以是「无」"},
-  {q:"《老子》第四十章「天下万物生于有，有生于无」阐述了什么宇宙生成观？", a:"具有特定形态的万物（有）最终源自于没有形态的道（无）"},
-  {q:"在道家思想中，「德」指的是什么？", a:"众生固有的、由道所赋予的内在力量、本质和能力"},
-  {q:"道家思想中「自然」（Ziran）的字面意思是什么，它与什么相对？", a:"字面意思是「自己如此」，与「人为」相对"},
-  {q:"道家提倡的「无为」是什么意思？", a:"指顺应自然固有秩序的非强制性、非争议性、轻松的行动，而非完全不行动"},
-  {q:"老子说「治大国若烹小鲜」这个比喻说明了什么治理原则？", a:"治理者应该做最少的事情来让事物按自然规律运行，但不能完全放任不管"},
-  {q:"佛教的四圣谛中，第一圣谛（苦谛）指出了什么？", a:"苦难（Dukkha）在世俗的人类存在中是无处不在且持续不断的"},
-  {q:"根据佛教教义，苦难的根源（集谛）是什么？", a:"由自私、自利的贪爱和欲望所造成"},
-  {q:"佛教徒所追寻的从轮回（samsara）中解脱，欲望熄灭的状态称为什么？", a:"涅槃（Nirvana）"},
-  {q:"佛教的三宝（三皈依）指的是什么？", a:"佛（佛陀）、法（教义）、僧（僧伽）"},
-  {q:"大乘佛教中，已达到觉悟但为帮助众生而延迟进入涅槃的觉者称为什么？", a:"菩萨（Boddhisatva）"},
-  {q:"中国禅宗关于觉悟方式的两大传统辩论是什么？", a:"渐悟（神秀大师提出）与顿悟（惠能大师提出）"},
-  {q:"秦国在哪一年击败六国，统一了中国？", a:"公元前221年"},
-  {q:"秦始皇嬴政建立的中央集权制度对后世有何深远影响？", a:"其郡县制等中央政府结构被后来的朝代延续了两千多年，奠定了统一主权中国的理念基础"},
-  {q:"连接中国与中亚、欧洲等地的古代贸易路线被统称为什么？", a:"丝绸之路"},
-  {q:"中国在哪个朝代因为开放政策和国际化环境，在文化上成为亚洲的中心？", a:"唐朝（公元618年 - 907年）"},
-  {q:"唐代佛教僧侣_____前往印度取经，回国后大量翻译佛经，使佛教成为本土化信仰。", a:"玄奘（唐三藏）"},
-  {q:"起源于隋朝，并在宋明两朝成为政府招募官员主要方式的制度是什么？", a:"科举制度"},
-  {q:"宋代理学家朱熹编注的哪四本书成为后来科举考试的必要学习内容？", a:"《论语》、《孟子》、《大学》、《中庸》（合称四书）"},
-  {q:"从19世纪中叶到20世纪中叶，中国遭受西方列强和日本侵略的时期被称为什么？", a:"百年国耻"},
-  {q:"哪场战争和哪个条约被视为中国百年国耻的开端？", a:"第一次鸦片战争（1839-1842）和《南京条约》"},
-  {q:"1901年，在义和团运动失败后，清政府与八国联军等国签订的条约是什么？", a:"《辛丑条约》（庚子议定书）"},
-  {q:"晚清时期，为应对西方挑战而发起的，旨在学习西方军事技术的现代化运动是什么？", a:"洋务运动（自强运动）"},
-  {q:"洋务运动的指导思想是什么？", a:"师夷长技以制夷"},
-  {q:"在甲午战争失败后，由康有为、梁启超等人发起，旨在进行制度改革的运动是什么？", a:"百日维新（戊戌变法）"},
-  {q:"百日维新提出了什么样的政治改革方案？", a:"君主立宪制"},
-  {q:"结束中国两千多年王朝制度的革命是什么？", a:"1911年的辛亥革命"},
-  {q:"因反对《凡尔赛条约》对山东问题的不公处理而引发的爱国学生运动是什么？", a:"五四运动"},
-  {q:"五四新文化运动倡导的两个核心价值是什么？", a:"科学与民主（「赛先生」与「德先生」）"},
-  {q:"孙中山提出的建国基本原则是什么？", a:"三民主义（民族、民权、民生）"},
-  {q:"1928年至1937年，在国民党政府统治下，被认为是中国的现代化建设的什么时期？", a:"黄金十年"},
-  {q:"第二次中日战争（抗日战争）的全面爆发是以哪个事件为标志？", a:"1937年的卢沟桥事变"},
-  {q:"在1934-35年，中国共产党为摆脱国民党的围剿而进行的战略转移被称为什么？", a:"长征"},
-  {q:"中华人民共和国在哪一年由毛泽东领导的中国共产党建立？", a:"1949年"},
-  {q:"毛泽东放弃苏联模式，发动的旨在快速实现共产主义的运动是什么，结果如何？", a:"大跃进；结果造成了经济混乱和大饥荒"},
-  {q:"1966年至1976年，由毛泽东发动的，对中国政府、教育和文化造成巨大破坏的政治运动是什么？", a:"文化大革命"},
-  {q:"毛泽东时代结束后，由谁开启了中国的改革开放计划？", a:"邓小平"},
-  {q:"邓小平时代提出的「四个现代化」目标是加强哪四个领域？", a:"农业、工业、国防、科技"},
-  {q:"为了在改革开放的同时维持政治稳定，邓小平提出了哪四项基本原则？", a:"坚持社会主义道路、坚持人民民主专政、坚持共产党的领导、坚持马列主义毛泽东思想"},
-  {q:"1989年在北京天安门广场发生的，以学生为主导的抗议活动被称为什么事件？", a:"六四事件"},
-  {q:"邓小平在1992年进行的_____重申了中国必须深化市场经济改革的决心。", a:"南巡"},
-  {q:"英国在哪一年将香港的主权移交给中国？", a:"1997年7月1日"},
-  {q:"习近平于2013年发起，旨在建立中国与中亚及其他地区经济战略联盟的倡议是什么？", a:"一带一路倡议（BRI）"},
-  {q:"根据资料，预测中国的实际GDP将在哪个时间点左右赶上美国？", a:"2030年左右"},
-  {q:"中国为应对气候变化，承诺在哪两个时间点分别实现碳达峰和碳中和？", a:"2030年达到碳排放峰值，2060年实现碳中和"},
-  {q:"中国经济发展的「双循环」战略指的是什么？", a:"以国内大循环为主体，国内国际双循环相互促进的发展格局"},
-  {q:"习近平主席提倡的「共同富裕」的真正含义是什么？", a:"给予那些尚未富裕的人一个致富的机会，而非简单的财富再分配"},
-  {q:"中国古代的四大发明是什么？", a:"磁罗盘、火药、造纸术、印刷术"},
-  {q:"毕昇在1041年发明了什么印刷技术？", a:"活字印刷术"},
-  {q:"解决韩信点兵问题的数学方法，现在被称为什么？", a:"中国剩余定理"},
-  {q:"13世纪的中国数学家杨辉所绘制的图表，与西方17世纪哪位数学家的发现相似？", a:"帕斯卡（Pascal's Triangle）"},
-  {q:"在中国古代天文学中，天象观测为何是一项受到严密保护的宫廷职能？", a:"因为天象被认为是「天命」的体现，与皇权合法性有关"},
-  {q:"明末清初，将西方数学、地理和天文学知识传入中国的耶稣会传教士代表人物是谁？", a:"利玛窦（Matteo Ricci）"},
-  {q:"学者李约瑟（Joseph Needham）提出的，关于中国历史的著名问题是什么？", a:"「近代科学为何未能在中国的兴起？」"},
-  {q:"在抗日战争时期，由北京大学、清华大学和南开大学在昆明合并组成的临时大学是什么？", a:"国立西南联合大学"},
-  {q:"中华人民共和国在20世纪中叶取得的重大科技成就「两弹一星」指的是什么？", a:"原子弹、氢弹和人造卫星"},
-  {q:"被誉为中国「火箭之父」的科学家是谁？", a:"钱学森"},
-  {q:"哪位中国科学家因发现青蒿素（一种有效的抗疟疾药物）而获得2015年诺贝尔生理学或医学奖？", a:"屠呦呦"},
-  {q:"中国国务院于2015年发布，旨在提升制造业创新能力的国家战略计划是什么？", a:"中国制造2025"}
-];
+    <main class="flex-1 flex flex-col h-full overflow-y-auto p-6 md:p-10 relative">
+        
+        <div class="max-w-4xl mx-auto w-full mb-8">
+            <div class="flex items-center gap-3 mb-2">
+                <span id="dist-type-badge" class="px-2 py-1 text-xs font-bold rounded bg-blue-100 text-blue-800 uppercase">Discrete</span>
+                <h2 id="dist-title" class="text-3xl font-bold text-slate-800">Bernoulli Distribution</h2>
+            </div>
+            <p id="dist-desc" class="text-slate-600 text-lg leading-relaxed">
+                The simplest discrete distribution. It models a single experiment with two possible outcomes: Success (1) or Failure (0).
+            </p>
+        </div>
 
-// ====================== 初始化 ======================
-let current = 0;
-let deck = [...flashcards];
-let known = new Set();
-let learning = new Set();
+        <div class="max-w-4xl mx-auto w-full grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            
+            <div class="lg:col-span-2 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <div class="relative h-64 w-full">
+                    <canvas id="distChart"></canvas>
+                </div>
+            </div>
 
-function loadCard() {
-  document.getElementById("question").innerHTML = deck[current].q.replace(/\n/g,"<br>");
-  document.getElementById("answer").innerHTML = deck[current].a.replace(/\n/g,"<br>");
-  document.getElementById("current").textContent = current + 1;
-  document.getElementById("total").textContent = deck.length;
-  document.getElementById("known").textContent = known.size;
-  document.getElementById("learning").textContent = deck.length - known.size;
-  document.getElementById("card").classList.remove("flipped");
-}
-function nextCard() { current = (current + 1) % deck.length; loadCard(); }
-function prevCard() { current = (current - 1 + deck.length) % deck.length; loadCard(); }
-function toggleFlip() { document.getElementById("card").classList.toggle("flipped"); }
-function shuffleCards() { 
-  for(let i=deck.length-1;i>0;i--){
-    const j=Math.floor(Math.random()*(i+1));
-    [deck[i],deck[j]]=[deck[j],deck[i]];
-  }
-  current=0; loadCard();
-}
-function markKnown() {
-  known.add(current);
-  nextCard();
-}
-function markLearning() {
-  nextCard();
-}
-function filterCards() {
-  const term = document.getElementById("search").value.toLowerCase();
-  if(term===""){
-    deck = [...flashcards];
-  }else{
-    deck = flashcards.filter(c => c.q.toLowerCase().includes(term) || c.a.toLowerCase().includes(term));
-  }
-  current=0;
-  loadCard();
-}
-function toggleDark() { document.body.classList.toggle("dark"); }
+            <div class="bg-slate-100 p-6 rounded-xl border border-slate-200 h-fit">
+                <h3 class="font-bold text-slate-700 mb-4 border-b border-slate-300 pb-2">Parameters</h3>
+                <div id="controls-area">
+                    </div>
+                <div class="mt-6 text-sm text-slate-500 bg-white p-3 rounded border border-slate-200">
+                    <strong class="block text-slate-700 mb-1">Visual Intuition:</strong>
+                    <span id="visual-explanation">Change the probability <em>p</em> to see the balance shift between 0 and 1.</span>
+                </div>
+            </div>
+        </div>
 
-// 键盘控制
-document.addEventListener("keydown", e => {
-  if(e.code==="Space" || e.code==="Enter"){ e.preventDefault(); toggleFlip(); }
-  if(e.code==="ArrowRight") nextCard();
-  if(e.code==="ArrowLeft") prevCard();
-});
+        <div class="max-w-4xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-8 pb-10">
+            <div class="prose prose-slate">
+                <h3 class="text-lg font-bold text-slate-800">Real World Example</h3>
+                <p id="dist-example" class="text-slate-600">A single coin flip. Heads is 1, Tails is 0.</p>
+            </div>
+            <div class="bg-slate-800 text-slate-200 p-6 rounded-lg">
+                <h3 class="text-sm font-bold text-slate-400 uppercase mb-2">Formula</h3>
+                <div id="dist-formula" class="text-lg text-center py-2">
+                    $$ P(x) = p^x (1-p)^{1-x} $$
+                </div>
+            </div>
+        </div>
 
-loadCard();
-</script>
-<div class="footer">中国通史闪卡 · 共 <strong id="total-bottom"></strong> 张 · 祝你考试顺利！</div>
-<script>document.getElementById("total-bottom").textContent=flashcards.length;</script>
+    </main>
+
+    <script>
+        // --- DATA & LOGIC ---
+
+        const distributions = {
+            // --- DISCRETE ---
+            bernoulli: {
+                title: "Bernoulli Distribution",
+                type: "Discrete",
+                desc: "The Bernoulli distribution is the discrete probability distribution of a random variable which takes the value 1 with probability p and the value 0 with probability q = 1 - p.",
+                example: "Flipping a single coin (Heads/Tails) or a single basketball free-throw (Make/Miss).",
+                formula: "$$ P(X=k) = p^k (1-p)^{1-k} \\quad \\text{for } k \\in \\{0,1\\} $$",
+                visualHint: "Since it is discrete, we use bars. Notice there are only two bars at 0 and 1.",
+                params: [
+                    { name: 'p', label: 'Probability (p)', min: 0, max: 1, step: 0.01, val: 0.5 }
+                ],
+                calc: (params) => {
+                    const p = params.p;
+                    return {
+                        labels: [0, 1],
+                        data: [1-p, p],
+                        chartType: 'bar'
+                    };
+                }
+            },
+            binomial: {
+                title: "Binomial Distribution",
+                type: "Discrete",
+                desc: "Models the number of successes in a fixed number of independent trials (n), each with the same probability of success (p).",
+                example: "Flipping a coin 10 times and counting how many times it lands on Heads.",
+                formula: "$$ P(X=k) = \\binom{n}{k} p^k (1-p)^{n-k} $$",
+                visualHint: "Watch how the 'bell shape' forms as n increases. If p < 0.5, it skews right; if p > 0.5, it skews left.",
+                params: [
+                    { name: 'n', label: 'Trials (n)', min: 1, max: 20, step: 1, val: 10 },
+                    { name: 'p', label: 'Probability (p)', min: 0, max: 1, step: 0.01, val: 0.5 }
+                ],
+                calc: (params) => {
+                    const n = parseInt(params.n);
+                    const p = params.p;
+                    let labels = [];
+                    let data = [];
+                    
+                    // Factorial helper
+                    const factorial = (num) => num <= 1 ? 1 : num * factorial(num - 1);
+                    // Combination helper
+                    const nCr = (n, r) => factorial(n) / (factorial(r) * factorial(n - r));
+
+                    for(let k=0; k<=n; k++) {
+                        labels.push(k);
+                        let prob = nCr(n, k) * Math.pow(p, k) * Math.pow(1-p, n-k);
+                        data.push(prob);
+                    }
+                    return { labels, data, chartType: 'bar' };
+                }
+            },
+            geometric: {
+                title: "Geometric Distribution",
+                type: "Discrete",
+                desc: "Models the number of failures before the first success occurs in a sequence of independent Bernoulli trials.",
+                example: "How many times you have to roll a die until you finally get a '6'.",
+                formula: "$$ P(X=k) = (1-p)^k p $$",
+                visualHint: "It always starts highest at k=0 (success on 1st try) and decays. Lower p means a longer 'tail'.",
+                params: [
+                    { name: 'p', label: 'Probability (p)', min: 0.1, max: 0.9, step: 0.05, val: 0.5 }
+                ],
+                calc: (params) => {
+                    const p = params.p;
+                    let labels = [];
+                    let data = [];
+                    // Show first 15 trials for visualization
+                    for(let k=0; k<15; k++) {
+                        labels.push(k); // k = failures before success
+                        let prob = Math.pow(1-p, k) * p;
+                        data.push(prob);
+                    }
+                    return { labels, data, chartType: 'bar' };
+                }
+            },
+            poisson: {
+                title: "Poisson Distribution",
+                type: "Discrete",
+                desc: "Models the number of events occurring in a fixed interval of time or space, given a constant mean rate (λ).",
+                example: "Number of emails arriving in your inbox in one hour.",
+                formula: "$$ P(X=k) = \\frac{\\lambda^k e^{-\\lambda}}{k!} $$",
+                visualHint: "As λ increases, the peak moves to the right and the distribution becomes more symmetric.",
+                params: [
+                    { name: 'lambda', label: 'Rate (λ)', min: 1, max: 15, step: 0.5, val: 4 }
+                ],
+                calc: (params) => {
+                    const lambda = params.lambda;
+                    let labels = [];
+                    let data = [];
+                    const factorial = (num) => num <= 1 ? 1 : num * factorial(num - 1);
+                    
+                    // Show enough range to see the curve
+                    let maxK = Math.max(15, lambda * 2 + 5); 
+                    for(let k=0; k<maxK; k++) {
+                        labels.push(k);
+                        let prob = (Math.pow(lambda, k) * Math.exp(-lambda)) / factorial(k);
+                        data.push(prob);
+                    }
+                    return { labels, data, chartType: 'bar' };
+                }
+            },
+            
+            // --- CONTINUOUS ---
+            uniform: {
+                title: "Continuous Uniform",
+                type: "Continuous",
+                desc: "A distribution where all outcomes within a range [a, b] are equally likely. It looks like a rectangle.",
+                example: "Waiting for a bus that comes exactly every 15 minutes; your wait time is uniform between 0 and 15.",
+                formula: "$$ f(x) = \\frac{1}{b-a} \\quad \\text{for } a \\le x \\le b $$",
+                visualHint: "The height is constant (flat). The wider the range (b-a), the shorter the rectangle (to keep area = 1).",
+                params: [
+                    { name: 'a', label: 'Min (a)', min: 0, max: 4, step: 1, val: 1 },
+                    { name: 'b', label: 'Max (b)', min: 5, max: 10, step: 1, val: 6 }
+                ],
+                calc: (params) => {
+                    let a = parseFloat(params.a);
+                    let b = parseFloat(params.b);
+                    if(a >= b) b = a + 1; // Basic validation
+                    
+                    const height = 1 / (b - a);
+                    let labels = [];
+                    let data = [];
+                    
+                    // Generate points for line chart
+                    // We draw 0 before a, then jump up, go to b, then jump down
+                    labels = [a-1, a, a, b, b, b+1];
+                    data = [0, 0, height, height, 0, 0];
+                    
+                    return { labels, data, chartType: 'line', fill: true };
+                }
+            },
+            normal: {
+                title: "Normal Distribution",
+                type: "Continuous",
+                desc: "Also known as the Gaussian or Bell Curve. It is symmetric and describes many natural phenomena.",
+                example: "Human heights, IQ scores, measurement errors.",
+                formula: "$$ f(x) = \\frac{1}{\\sigma\\sqrt{2\\pi}} e^{-\\frac{1}{2}(\\frac{x-\\mu}{\\sigma})^2} $$",
+                visualHint: "μ moves the center left/right. σ controls the width/spread. Higher σ = flatter curve.",
+                params: [
+                    { name: 'mu', label: 'Mean (μ)', min: -5, max: 5, step: 0.5, val: 0 },
+                    { name: 'sigma', label: 'Std Dev (σ)', min: 0.5, max: 3, step: 0.1, val: 1 }
+                ],
+                calc: (params) => {
+                    const mu = parseFloat(params.mu);
+                    const sigma = parseFloat(params.sigma);
+                    let labels = [];
+                    let data = [];
+                    
+                    // Generate range -4std to +4std
+                    const start = mu - (4 * sigma);
+                    const end = mu + (4 * sigma);
+                    const steps = 100;
+                    const stepSize = (end - start) / steps;
+                    
+                    for(let i=0; i<=steps; i++) {
+                        let x = start + (i * stepSize);
+                        labels.push(x.toFixed(2));
+                        let num = Math.exp(-0.5 * Math.pow((x - mu) / sigma, 2));
+                        let den = sigma * Math.sqrt(2 * Math.PI);
+                        data.push(num / den);
+                    }
+                    return { labels, data, chartType: 'line', fill: true, pointRadius: 0 };
+                }
+            },
+            exponential: {
+                title: "Exponential Distribution",
+                type: "Continuous",
+                desc: "Models the time between events in a Poisson point process (events occur continuously and independently at a constant rate).",
+                example: "Time until the next customer arrives at a store, or time until a lightbulb fails.",
+                formula: "$$ f(x) = \\lambda e^{-\\lambda x} \\quad \\text{for } x \\ge 0 $$",
+                visualHint: "It starts at its maximum value (λ) at x=0 and decays exponentially. It never touches zero.",
+                params: [
+                    { name: 'lambda', label: 'Rate (λ)', min: 0.1, max: 3, step: 0.1, val: 1 }
+                ],
+                calc: (params) => {
+                    const lambda = parseFloat(params.lambda);
+                    let labels = [];
+                    let data = [];
+                    
+                    const end = 5 / lambda; // Show effective tail
+                    const steps = 100;
+                    const stepSize = end / steps;
+                    
+                    for(let i=0; i<=steps; i++) {
+                        let x = i * stepSize;
+                        labels.push(x.toFixed(2));
+                        data.push(lambda * Math.exp(-lambda * x));
+                    }
+                    return { labels, data, chartType: 'line', fill: true, pointRadius: 0 };
+                }
+            }
+        };
+
+        // --- CHART SETUP ---
+        const ctx = document.getElementById('distChart').getContext('2d');
+        let chartInstance = null;
+        let currentDist = 'bernoulli';
+        let currentParams = {};
+
+        function initChart(type, labels, data, fill, pointRadius) {
+            if (chartInstance) chartInstance.destroy();
+            
+            const isDiscrete = type === 'bar';
+            
+            chartInstance = new Chart(ctx, {
+                type: type,
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Probability',
+                        data: data,
+                        backgroundColor: isDiscrete ? 'rgba(79, 70, 229, 0.6)' : 'rgba(79, 70, 229, 0.2)', // Indigo
+                        borderColor: 'rgba(79, 70, 229, 1)',
+                        borderWidth: 2,
+                        fill: fill || false,
+                        pointRadius: pointRadius !== undefined ? pointRadius : 3,
+                        tension: 0.4 // Smooth curves for continuous
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 200 }, // Fast animation for sliders
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: isDiscrete ? 'Probability P(x)' : 'Density f(x)' } },
+                        x: { title: { display: true, text: 'Outcome (x)' }, ticks: { maxTicksLimit: 10 } }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        // --- UI UPDATES ---
+        
+        function renderControls(distKey) {
+            const container = document.getElementById('controls-area');
+            container.innerHTML = '';
+            
+            const params = distributions[distKey].params;
+            currentParams = {};
+
+            params.forEach(p => {
+                currentParams[p.name] = p.val;
+                
+                // Create slider elements
+                const wrapper = document.createElement('div');
+                wrapper.className = 'slider-container';
+                
+                const labelRow = document.createElement('div');
+                labelRow.className = 'flex justify-between mb-1';
+                
+                const label = document.createElement('label');
+                label.className = 'text-sm font-medium text-slate-700';
+                label.innerText = p.label;
+                
+                const valDisplay = document.createElement('span');
+                valDisplay.className = 'text-sm font-bold text-indigo-600';
+                valDisplay.innerText = p.val;
+                valDisplay.id = `val-${p.name}`;
+                
+                labelRow.appendChild(label);
+                labelRow.appendChild(valDisplay);
+                
+                const input = document.createElement('input');
+                input.type = 'range';
+                input.min = p.min;
+                input.max = p.max;
+                input.step = p.step;
+                input.value = p.val;
+                input.className = 'w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600';
+                
+                // Event Listener
+                input.addEventListener('input', (e) => {
+                    const val = parseFloat(e.target.value);
+                    document.getElementById(`val-${p.name}`).innerText = val;
+                    currentParams[p.name] = val;
+                    updateGraph();
+                });
+
+                wrapper.appendChild(labelRow);
+                wrapper.appendChild(input);
+                container.appendChild(wrapper);
+            });
+        }
+
+        function updateGraph() {
+            const dist = distributions[currentDist];
+            const result = dist.calc(currentParams);
+            
+            // Re-init chart if type changes (bar <-> line) or update data
+            // For simplicity, we just re-init lightly or update data
+            // Ideally we check type but chartjs handle destroy well
+            initChart(result.chartType, result.labels, result.data, result.fill, result.pointRadius);
+        }
+
+        function loadDist(key) {
+            currentDist = key;
+            const data = distributions[key];
+            
+            // Highlight active button
+            document.querySelectorAll('aside button').forEach(b => {
+                b.classList.remove('bg-indigo-50', 'text-indigo-700');
+                b.classList.add('text-slate-700');
+            });
+            document.getElementById(`btn-${key}`).classList.add('bg-indigo-50', 'text-indigo-700');
+            document.getElementById(`btn-${key}`).classList.remove('text-slate-700');
+
+            // Text Content
+            document.getElementById('dist-title').innerText = data.title;
+            document.getElementById('dist-desc').innerText = data.desc;
+            document.getElementById('dist-example').innerText = data.example;
+            document.getElementById('dist-formula').innerHTML = data.formula;
+            document.getElementById('visual-explanation').innerText = data.visualHint;
+
+            // Badge
+            const badge = document.getElementById('dist-type-badge');
+            badge.innerText = data.type;
+            if(data.type === 'Continuous') {
+                badge.className = 'px-2 py-1 text-xs font-bold rounded bg-orange-100 text-orange-800 uppercase';
+            } else {
+                badge.className = 'px-2 py-1 text-xs font-bold rounded bg-blue-100 text-blue-800 uppercase';
+            }
+
+            // Reprocess MathJax
+            if(window.MathJax) {
+                MathJax.typesetPromise();
+            }
+
+            // Setup Controls & Initial Graph
+            renderControls(key);
+            updateGraph();
+        }
+
+        // --- INIT ---
+        window.onload = () => {
+            loadDist('bernoulli');
+        };
+
+    </script>
 </body>
 </html>
